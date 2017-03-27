@@ -76,7 +76,7 @@ func (api mixpanelAPIProduction) request(method string, endpoint string, payload
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		logrus.WithError(err).WithField("method", method).WithField("endpoint", endpoint).WithField("payload", string(payload[:])).Error("Error sending request to Drip api")
+		logrus.WithError(err).WithField("method", method).WithField("endpoint", endpoint).WithField("payload", string(payload[:])).Error("Error sending request to Mixpanel api")
 		return
 	}
 
@@ -93,6 +93,12 @@ func (api mixpanelAPIProduction) request(method string, endpoint string, payload
 				"response":    string(responseBody),
 				"HTTP-status": resp.StatusCode}).Error("Mixpanel api returned errors")
 	}
+
+	logrus.WithField("method", method).WithField("endpoint", endpoint).WithField("payload", string(payload[:])).WithFields(
+		logrus.Fields{
+			"response":    string(responseBody),
+			"HTTP-status": resp.StatusCode}).Info("Sent stuff to Mixpanel ", string(req.URL.String()))
+
 	return
 }
 
