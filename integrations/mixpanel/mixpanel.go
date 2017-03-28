@@ -28,6 +28,8 @@ type apiSubscriber struct {
 	CustomFields map[string]interface{} `json:"$set"`
 	UserId       string                 `json:"$distinct_id"`
 	Token        string                 `json:"$token"`
+	Name         string                 `json:"$name"`
+	Email        string                 `json:"$email"`
 }
 
 // Identify forwards and identify call to Mixpanel
@@ -35,6 +37,16 @@ func (m Mixpanel) Identify(identification integrations.Identification) (err erro
 	s := apiSubscriber{}
 	s.UserId = string(identification.UserID)
 	s.Token = token()
+
+	if email, ok := identification.UserTraits["email"]; ok {
+		s.Email = email.(string)
+		delete(identification.UserTraits, "email")
+	}
+
+	if name, ok := identification.UserTraits["name"]; ok {
+		s.Email = name.(string)
+		delete(identification.UserTraits, "name")
+	}
 
 	// Add custom attributes
 	s.CustomFields = identification.UserTraits
