@@ -32,6 +32,11 @@ type apiSubscriber struct {
 	Email        string                 `json:"$email"`
 }
 
+type apiEvent struct {
+	Event      string                 `json:"event"`
+	Properties map[string]interface{} `json:"properties"`
+}
+
 // Identify forwards and identify call to Mixpanel
 func (m Mixpanel) Identify(identification integrations.Identification) (err error) {
 	s := apiSubscriber{}
@@ -59,8 +64,20 @@ func (m Mixpanel) Identify(identification integrations.Identification) (err erro
 }
 
 // Track forwards the event to Mixpanel
-func (Mixpanel) Track(event integrations.Event) (err error) {
-
+func (m Mixpanel) Track(event integrations.Event) (err error) {
+	e := apiEvent{}
+	e.Event = event.Name
+	// event.Properties["forwardlyticsReceivedAt"] = event.ReceivedAt
+	event.Properties["time"] = event.Timestamp
+	event.Properties["token"] = token()
+	event.Properties["distinct_id"] = event.UserID
+	delete(event.Properties, "email")
+	e.Properties = event.Properties
+	payload, err := json.Marshal(e)
+	if err != nil {
+		logrus.WithField("err", err).Fatal("Error marshalling Mixpanel event to json")
+	}
+	err = m.api.request("GET", "track", payload)
 	return
 }
 
