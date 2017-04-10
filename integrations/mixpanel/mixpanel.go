@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/jipiboily/forwardlytics/integrations"
@@ -77,7 +78,25 @@ func (m Mixpanel) Track(event integrations.Event) (err error) {
 	if err != nil {
 		logrus.WithField("err", err).Fatal("Error marshalling Mixpanel event to json")
 	}
-	err = m.api.request("GET", "track", payload)
+
+	// Strange design choice in the mixpanel api. Need to use a
+	// different endpoint if the timestamp is more than 5 days
+	// ago. Submitting all events older than 5 days to the
+	// 'import'-endpoint (see:
+	// https://mixpanel.com/help/reference/http "Tracking via
+	// HTTP"). Also timestamp can't be more than 5 years ago so
+	// then it should fail.
+	fiveDaysAgo := time.Now().Add(-5 * 60 * 24 * time.Minute).Unix()
+	fiveYearsAgo := time.Now().Add(-5 * time.Year).Unix()
+
+	var endpoint string
+	if event.Timestamp < fiveDaysAgo {
+		endpoint = "import"
+	} else {
+		endpoint = "track"
+	}
+
+	err = m.api.request("GET", endpoint, payload)
 	return
 }
 
