@@ -66,9 +66,16 @@ func (m Mixpanel) Identify(identification integrations.Identification) (err erro
 
 // Track forwards the event to Mixpanel
 func (m Mixpanel) Track(event integrations.Event) (err error) {
+	// Events that are more than 5 years ago will fail in the mixpanel api
+	fiveYearsAgo := time.Now().AddDate(-5, 0, 0).Unix()
+	if event.Timestamp < fiveYearsAgo {
+		logrus.Error("Mixpanel won't accept events that are older than 5 years")
+		return
+	}
+
 	e := apiEvent{}
 	e.Event = event.Name
-	// event.Properties["forwardlyticsReceivedAt"] = event.ReceivedAt
+	event.Properties["forwardlyticsReceivedAt"] = event.ReceivedAt
 	event.Properties["time"] = event.Timestamp
 	event.Properties["token"] = token()
 	event.Properties["distinct_id"] = event.UserID
@@ -79,21 +86,19 @@ func (m Mixpanel) Track(event integrations.Event) (err error) {
 		logrus.WithField("err", err).Fatal("Error marshalling Mixpanel event to json")
 	}
 
-	// Strange design choice in the mixpanel api. Need to use a
+	// Strange design choice in the mixpanel api: Need to use a
 	// different endpoint if the timestamp is more than 5 days
 	// ago. Submitting all events older than 5 days to the
 	// 'import'-endpoint (see:
 	// https://mixpanel.com/help/reference/http "Tracking via
-	// HTTP"). Also timestamp can't be more than 5 years ago so
-	// then it should fail.
-	fiveDaysAgo := time.Now().Add(-5 * 60 * 24 * time.Minute).Unix()
-	fiveYearsAgo := time.Now().Add(-5 * time.Year).Unix()
-
+	// HTTP")
+	fiveDaysAgo := time.Now().AddDate(0, 0, -5).Unix()
+	logrus.Info(fiveDaysAgo)
 	var endpoint string
-	if event.Timestamp < fiveDaysAgo {
-		endpoint = "import"
-	} else {
+	if event.Timestamp > fiveDaysAgo {
 		endpoint = "track"
+	} else {
+		endpoint = "import"
 	}
 
 	err = m.api.request("GET", endpoint, payload)
@@ -115,7 +120,10 @@ func (api mixpanelAPIProduction) request(method string, endpoint string, payload
 	req, err := http.NewRequest(method, apiUrl, nil)
 	// Mixpanel needs the request to be GET http://<api-url>?data=<base64-encoded payload>
 	q := req.URL.Query()
+	logrus.Info(base64.StdEncoding.EncodeToString(payload))
 	q.Add("data", base64.StdEncoding.EncodeToString(payload))
+	q.Add("verbose", "1")
+
 	req.URL.RawQuery = q.Encode()
 
 	client := &http.Client{}
