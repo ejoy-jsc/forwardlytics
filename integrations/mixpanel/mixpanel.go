@@ -122,7 +122,12 @@ func (api mixpanelAPIProduction) request(method string, endpoint string, payload
 	q := req.URL.Query()
 	logrus.Info(base64.StdEncoding.EncodeToString(payload))
 	q.Add("data", base64.StdEncoding.EncodeToString(payload))
-	q.Add("verbose", "1")
+
+	// Hack, when using the /import-endpoint api_key must be
+	// passed as a query param as well
+	if endpoint == "import" {
+		q.Add("api_key", token())
+	}
 
 	req.URL.RawQuery = q.Encode()
 
