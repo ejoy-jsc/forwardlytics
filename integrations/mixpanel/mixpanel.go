@@ -3,6 +3,7 @@ package mixpanel
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -70,7 +71,7 @@ func (m Mixpanel) Track(event integrations.Event) (err error) {
 	fiveYearsAgo := time.Now().AddDate(-5, 0, 0).Unix()
 	if event.Timestamp < fiveYearsAgo {
 		logrus.Error("Mixpanel won't accept events that are older than 5 years")
-		return
+		return errors.New("Mixpanel doesn't support importing events with a timestamp more than 5 years ago")
 	}
 
 	e := apiEvent{}
@@ -128,7 +129,7 @@ func (Mixpanel) Enabled() bool {
 func (api mixpanelAPIProduction) request(method string, endpoint string, payload []byte) (err error) {
 	apiUrl := api.Url + endpoint
 	req, err := http.NewRequest(method, apiUrl, nil)
-	// Mixpanel needs the request to be GET http://<api-url>?data=<base64-encoded payload>
+	// Mixpanel needs the request to be GET https://<api-url>?data=<base64-encoded payload>
 	q := req.URL.Query()
 	logrus.Info(base64.StdEncoding.EncodeToString(payload))
 	q.Add("data", base64.StdEncoding.EncodeToString(payload))
