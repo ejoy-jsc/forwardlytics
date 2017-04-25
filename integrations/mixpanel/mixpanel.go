@@ -93,7 +93,6 @@ func (m Mixpanel) Track(event integrations.Event) (err error) {
 	// https://mixpanel.com/help/reference/http "Tracking via
 	// HTTP")
 	fiveDaysAgo := time.Now().AddDate(0, 0, -5).Unix()
-	logrus.Info(fiveDaysAgo)
 	var endpoint string
 	if event.Timestamp > fiveDaysAgo {
 		endpoint = "track"
@@ -105,8 +104,19 @@ func (m Mixpanel) Track(event integrations.Event) (err error) {
 	return
 }
 
-func (Mixpanel) Page(page integrations.Page) (err error) {
-	logrus.Errorf("NOT IMPLEMENTED: will send %#v to Mixpanel\n", page)
+// Page forwards the page-events to Mixpanel
+func (m Mixpanel) Page(page integrations.Page) (err error) {
+	// Mixpanel has no special api for Page events, so just pass on the Page-event to Track
+	// Name is the name of the page
+	pageEvent := integrations.Event{}
+	pageEvent.Name = page.Name
+	pageEvent.UserID = page.UserID
+	pageEvent.Properties = page.Properties
+	pageEvent.Properties["url"] = page.Url
+	pageEvent.Properties["event"] = "page"
+	pageEvent.Timestamp = page.Timestamp
+	pageEvent.ReceivedAt = page.ReceivedAt
+	err = m.Track(pageEvent)
 	return
 }
 
