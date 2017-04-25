@@ -51,7 +51,7 @@ func (m Mixpanel) Identify(identification integrations.Identification) (err erro
 	}
 
 	if name, ok := identification.UserTraits["name"]; ok {
-		s.Email = name.(string)
+		s.Name = name.(string)
 		delete(identification.UserTraits, "name")
 	}
 
@@ -85,6 +85,7 @@ func (m Mixpanel) Track(event integrations.Event) (err error) {
 	payload, err := json.Marshal(e)
 	if err != nil {
 		logrus.WithField("err", err).Fatal("Error marshalling Mixpanel event to json")
+		return
 	}
 
 	// Strange design choice in the mixpanel api: Need to use a

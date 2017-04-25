@@ -34,6 +34,7 @@ func TestIdentify(t *testing.T) {
 		UserID: "123",
 		UserTraits: map[string]interface{}{
 			"email": "john@example.com",
+			"name":  "John Candy",
 		},
 		Timestamp:  1234567,
 		ReceivedAt: 8765432,
@@ -51,13 +52,12 @@ func TestIdentify(t *testing.T) {
 		t.Errorf("Expected endpoint to be engage, was: %v", api.Endpoint)
 	}
 
-	expectedPayload := `{"$set":{"forwardlyticsReceivedAt":8765432,"forwardlyticsTimestamp":1234567},"$distinct_id":"123","$token":"321","$name":"","$email":"john@example.com"}`
+	expectedPayload := `{"$set":{"forwardlyticsReceivedAt":8765432,"forwardlyticsTimestamp":1234567},"$distinct_id":"123","$token":"321","$name":"John Candy","$email":"john@example.com"}`
 	if string(api.Payload) != expectedPayload {
 		t.Errorf("Expected payload: "+string(expectedPayload)+" got: %s", api.Payload)
 	}
 }
 
-// Test track
 func TestTrackRecentEvent(t *testing.T) {
 	os.Setenv("MIXPANEL_TOKEN", "321")
 	m := Mixpanel{}
@@ -195,7 +195,9 @@ func TestPage(t *testing.T) {
 	}
 }
 
-// Test request
+func TestRequest(t *testing.T) {
+
+}
 
 type APIMock struct {
 	Url      string
